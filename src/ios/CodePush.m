@@ -469,6 +469,12 @@ StatusReport* rollbackStatusReport = nil;
         if ([[NSFileManager defaultManager] fileExistsAtPath:realStartPageLocation]) {
             return [NSURL fileURLWithPath:realStartPageLocation];
         }
+        // Sometimes NoCloud is in the path twice. Bug I guess?
+        NSArray* realLocationArrayNext = @[libraryLocation, packageLocation, @"www", startPage];
+        NSString* realStartPageLocationNext = [NSString pathWithComponents:realLocationArrayNext];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:realStartPageLocationNext]) {
+            return [NSURL fileURLWithPath:realStartPageLocationNext];
+        }
     }
 
     return nil;
