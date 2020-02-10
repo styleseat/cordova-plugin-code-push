@@ -402,8 +402,8 @@ StatusReport* rollbackStatusReport = nil;
     // use the WebViewEngine for performing navigations only if the host app
     // is running 4.0.0+, and fallback to directly using the WebView otherwise.
 #ifdef __CORDOVA_4_0_0
-    if ([self hasIonicWebViewEngine]) {
-        [self setServerBasePath:url.path];
+    if ([CodePush hasIonicWebViewEngine: self.webViewEngine]) {
+        [CodePush setServerBasePath:url.path webView:self.webViewEngine];
     } else {
         [self.webViewEngine loadRequest:[NSURLRequest requestWithURL:url]];
     }
