@@ -401,7 +401,7 @@ StatusReport* rollbackStatusReport = nil;
     // maintaining back-compat with Cordova iOS 3.9.0, we need to conditionally
     // use the WebViewEngine for performing navigations only if the host app
     // is running 4.0.0+, and fallback to directly using the WebView otherwise.
-#ifdef __CORDOVA_4_0_0
+#if (WK_WEB_VIEW_ONLY && defined(__CORDOVA_4_0_0)) || defined(__CORDOVA_4_0_0)
     if ([CodePush hasIonicWebViewEngine: self.webViewEngine]) {
         [CodePush setServerBasePath:url.path webView:self.webViewEngine];
     } else {
