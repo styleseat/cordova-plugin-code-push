@@ -478,11 +478,6 @@ StatusReport* rollbackStatusReport = nil;
         NSArray* realLocationArray = @[libraryLocation, @"NoCloud", packageLocation, @"www", startPage];
         NSString* realStartPageLocation = [NSString pathWithComponents:realLocationArray];
         if ([[NSFileManager defaultManager] fileExistsAtPath:realStartPageLocation]) {
-            // Fixes WKWebView unable to load start page from CodePush update directory
-            NSString* scheme = [self getAppScheme];
-            if ([Utilities CDVWebViewEngineAvailable] && ([realStartPageLocation hasPrefix:@"/_app_file_"] == NO) && !([scheme isEqualToString: @"file"] || scheme == nil)) {
-                realStartPageLocation = [@"/_app_file_" stringByAppendingString:realStartPageLocation];
-            }
             return [NSURL fileURLWithPath:realStartPageLocation];
         }
         // Sometimes NoCloud is in the path twice. Bug I guess?
