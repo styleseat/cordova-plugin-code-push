@@ -86,7 +86,7 @@ var LocalPackage = (function (_super) {
             });
         }
         catch (e) {
-            installError && installError(new Error("An error occured while installing the package. " + CodePushUtil.getErrorMessage(e)));
+            installError && installError(new Error("An error occurred while installing the package. " + CodePushUtil.getErrorMessage(e)));
         }
     };
     LocalPackage.prototype.verifyPackage = function (deploymentResult, installError, successCallback) {
@@ -140,13 +140,13 @@ var LocalPackage = (function (_super) {
                 return;
             }
             publicKey = publicKeyResult;
-            isSignatureVerificationEnabled = (publicKey !== null);
+            isSignatureVerificationEnabled = !!publicKey;
             _this.getSignatureFromUpdate(deploymentResult.deployDir, function (error, signature) {
                 if (error) {
                     installError && installError(new Error("Error reading signature from update. " + error));
                     return;
                 }
-                isSignatureAppearedInBundle = (signature !== null);
+                isSignatureAppearedInBundle = !!signature;
                 verify(isSignatureVerificationEnabled, isSignatureAppearedInBundle, publicKey, signature);
             });
         });
@@ -232,12 +232,18 @@ var LocalPackage = (function (_super) {
                             var installModeToUse = _this.isMandatory ? installOptions.mandatoryInstallMode : installOptions.installMode;
                             if (installModeToUse === InstallMode.IMMEDIATE) {
                                 installSuccess && installSuccess(installModeToUse);
-                                cordova.exec(function () { }, function () { }, "CodePush", "install", [deployDir.fullPath,
-                                    installModeToUse.toString(), installOptions.minimumBackgroundDuration.toString()]);
+                                cordova.exec(function () { }, function () { }, "CodePush", "install", [
+                                    deployDir.fullPath,
+                                    installModeToUse.toString(),
+                                    installOptions.minimumBackgroundDuration.toString()
+                                ]);
                             }
                             else {
-                                cordova.exec(function () { installSuccess && installSuccess(installModeToUse); }, function () { installError && installError(); }, "CodePush", "install", [deployDir.fullPath,
-                                    installModeToUse.toString(), installOptions.minimumBackgroundDuration.toString()]);
+                                cordova.exec(function () { installSuccess && installSuccess(installModeToUse); }, function () { installError && installError(); }, "CodePush", "install", [
+                                    deployDir.fullPath,
+                                    installModeToUse.toString(),
+                                    installOptions.minimumBackgroundDuration.toString()
+                                ]);
                             }
                         };
                         var preInstallSuccess = function () {
@@ -245,7 +251,7 @@ var LocalPackage = (function (_super) {
                         };
                         var preInstallFailure = function (preInstallError) {
                             CodePushUtil.logError("Preinstall failure.", preInstallError);
-                            var error = new Error("An error has occured while installing the package. " + CodePushUtil.getErrorMessage(preInstallError));
+                            var error = new Error("An error has occurred while installing the package. " + CodePushUtil.getErrorMessage(preInstallError));
                             installError && installError(error);
                         };
                         cordova.exec(preInstallSuccess, preInstallFailure, "CodePush", "preInstall", [deployDir.fullPath]);

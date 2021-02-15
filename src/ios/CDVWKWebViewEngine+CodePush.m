@@ -1,6 +1,7 @@
 #if defined(__has_include)
 #if __has_include("CDVWKWebViewEngine.h")
 
+#import <Cordova/NSDictionary+CordovaPreferences.h>
 #import "CDVWKWebViewEngine.h"
 #import "CodePush.h"
 
@@ -15,6 +16,11 @@ NSString* lastLoadedURL = @"";
 - (id)loadRequest:(NSURLRequest *)request {
     lastLoadedURL = request.URL.absoluteString;
     NSURL *readAccessURL;
+
+    NSURL* bundleURL = [[NSBundle mainBundle] bundleURL];
+    if (![lastLoadedURL containsString:bundleURL.path] && ![lastLoadedURL containsString:IdentifierCodePushPath]) {
+        return [self loadPluginRequest:request];
+    }
 
     if (request.URL.isFileURL) {
         // All file URL requests should be handled with the setServerBasePath in case if it is Ionic app.
@@ -47,6 +53,36 @@ NSString* lastLoadedURL = @"";
     }
 }
 
+- (id)loadPluginRequest:(NSURLRequest *)request {
+    if (request.URL.fileURL) {
+        NSDictionary* settings = self.commandDelegate.settings;
+        NSString *bind = [settings cordovaSettingForKey:@"Hostname"];
+        if(bind == nil){
+            bind = @"localhost";
+        }
+        NSString *scheme = [settings cordovaSettingForKey:@"iosScheme"];
+        if(scheme == nil || [scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"]  || [scheme isEqualToString:@"file"]){
+            scheme = @"ionic";
+        }
+        NSString *CDV_LOCAL_SERVER = [NSString stringWithFormat:@"%@://%@", scheme, bind];
+        
+        NSURL* startURL = [NSURL URLWithString:((CDVViewController *)self.viewController).startPage];
+        NSString* startFilePath = [self.commandDelegate pathForResource:[startURL path]];
+        NSURL *url = [[NSURL URLWithString:CDV_LOCAL_SERVER] URLByAppendingPathComponent:request.URL.path];
+        if ([request.URL.path isEqualToString:startFilePath]) {
+            url = [NSURL URLWithString:CDV_LOCAL_SERVER];
+        }
+        if(request.URL.query) {
+            url = [NSURL URLWithString:[@"?" stringByAppendingString:request.URL.query] relativeToURL:url];
+        }
+        if(request.URL.fragment) {
+            url = [NSURL URLWithString:[@"#" stringByAppendingString:request.URL.fragment] relativeToURL:url];
+        }
+        request = [NSURLRequest requestWithURL:url];
+    }
+    return [(WKWebView*)self.engineWebView loadRequest:request];
+}
+
 #pragma clang diagnostic pop
 
 // Fix bug related to unable WKWebView recovery after reinit with loaded codepush update
@@ -60,15 +96,25 @@ NSString* lastLoadedURL = @"";
     } else {
         // Default implementation of didFailNavigation method of CDVWKWebViewEngine.m
         CDVViewController* vc = (CDVViewController*)self.viewController;
+#ifndef __CORDOVA_6_0_0
+        [CDVUserAgentUtil releaseLock:vc.userAgentLockToken];
+#endif
+
         NSString* message = [NSString stringWithFormat:@"Failed to load webpage with error: %@", [error localizedDescription]];
         NSLog(@"%@", message);
-        [CDVUserAgentUtil releaseLock:vc.userAgentLockToken];
+
         NSURL* errorUrl = vc.errorURL;
         if (errorUrl) {
-            errorUrl = [NSURL URLWithString:[NSString stringWithFormat:@"?error=%@", [message stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]] relativeToURL:errorUrl];
+            NSCharacterSet *charSet = [NSCharacterSet URLFragmentAllowedCharacterSet];
+            errorUrl = [NSURL URLWithString:[NSString stringWithFormat:@"?error=%@", [message stringByAddingPercentEncodingWithAllowedCharacters:charSet]] relativeToURL:errorUrl];
             NSLog(@"%@", [errorUrl absoluteString]);
             [theWebView loadRequest:[NSURLRequest requestWithURL:errorUrl]];
         }
+#ifdef DEBUG
+        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"] message:message preferredStyle:UIAlertControllerStyleAlert];
+        [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"OK", nil) style:UIAlertActionStyleDefault handler:nil]];
+        [vc presentViewController:alertController animated:YES completion:nil];
+#endif
     }
 }
 
